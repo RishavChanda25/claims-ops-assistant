@@ -13,8 +13,9 @@ def retrieve_context(query: str, k: int = 5, distance_threshold: float = 1.1) ->
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     
     # 2. Connect to the Chroma DB
-    # We point to the 'db' folder relative to the project root
-    db_path = os.path.join(os.path.dirname(__file__), "..", "db", "chroma_db")
+    # Calculate the absolute path dynamically so it works on any computer
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.abspath(os.path.join(current_dir, "..", "db", "chroma_db"))
     
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"Vector database not found at {db_path}. Please run ingestion first.")
