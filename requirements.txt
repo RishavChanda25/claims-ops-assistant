@@ -1,0 +1,19 @@
+# Core Framework
+langchain==0.2.16
+langchain-community==0.2.16
+langchain-text-splitters==0.2.4
+sentence-transformers==3.0.1
+
+# AI Integration
+langchain-google-genai==1.0.10
+google-genai==0.3.0
+
+# Vector Database
+chromadb==0.5.5
+
+# UI & Utilities
+streamlit
+pypdf
+python-dotenv
+ipykernel
+fpdf
