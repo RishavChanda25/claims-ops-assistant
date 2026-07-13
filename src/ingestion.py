@@ -44,7 +44,3 @@ def build_knowledge_base(directory_path="../data/policies", chroma_path="../db/c
     
     print("\n✅ Knowledge Base completely finished!")
     return len(valid_chunks)
-
-if __name__ == "__main__":
-    # Allows running directly from terminal if needed
-    build_knowledge_base(directory_path="data/policies", chroma_path="db/chroma_db")

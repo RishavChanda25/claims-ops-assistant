@@ -1,58 +1,63 @@
 import os
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain_core.documents import Document
 
-def retrieve_context(query: str, k: int = 5, distance_threshold: float = 1.1) -> list:
+def retrieve_context(query: str, k: int = 12) -> list:
     """
-    Connects to the vector database, embeds the query, and retrieves 
-    relevant document chunks that fall within the similarity threshold.
+    Connects to the vector database, performs a hybrid search (Dense + Sparse),
+    and reranks the results using a Cross-Encoder to return the top-K documents.
     """
     
-    # 1. Initialize the same local embedding model used in ingestion
-    # This must match exactly or the vectors won't align.
+    # 1. Initialize Embeddings for Dense Search
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     
     # 2. Connect to the Chroma DB
-    # Calculate the absolute path dynamically so it works on any computer
     current_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.abspath(os.path.join(current_dir, "..", "db", "chroma_db"))
     
     if not os.path.exists(db_path):
-        raise FileNotFoundError(f"Vector database not found at {db_path}. Please run ingestion first.")
+        raise FileNotFoundError(f"Vector database not found at {db_path}.")
 
     db = Chroma(persist_directory=db_path, embedding_function=embeddings)
     
-    # 3. Perform similarity search with distance scores
-    # Lower distance = Higher similarity
-    results_with_scores = db.similarity_search_with_score(query, k=k)
+    # 3. Prepare Documents for Sparse Search (BM25)
+    db_data = db.get()
+    docs = [
+        Document(page_content=txt, metadata=meta)
+        for txt, meta in zip(db_data['documents'], db_data['metadatas'])
+    ]
     
-    valid_documents = []
+    # Scale candidate pool to 3x of final k so the reranker has a diverse pool to filter
+    candidate_pool_size = k * 3
     
-    for doc, distance in results_with_scores:
-        # 4. Apply the Distance Threshold
-        # Matches above this distance are considered irrelevant
-        if distance <= distance_threshold:
-            valid_documents.append(doc)
-        else:
-            # Optional: Log rejected chunks for debugging
-            # print(f"Rejected chunk from {doc.metadata.get('source')} due to distance {distance:.4f}")
-            pass
-            
-    return valid_documents
+    bm25_retriever = BM25Retriever.from_documents(docs)
+    bm25_retriever.k = candidate_pool_size
 
-if __name__ == "__main__":
-    # Self-test block
-    test_query = "Does my auto policy cover flood damage to my car and my laptop?"
-    print(f"Testing Retrieval for: '{test_query}'...")
-    
-    try:
-        docs = retrieve_context(test_query)
-        print(f"Successfully retrieved {len(docs)} relevant chunks.\n")
-        
-        for i, doc in enumerate(docs):
-            source = doc.metadata.get('source', 'Unknown').split('/')[-1].split('\\')[-1]
-            print(f"--- Result {i+1} | Source: {source} ---")
-            print(f"{doc.page_content[:200]}...\n")
-            
-    except Exception as e:
-        print(f"Error during retrieval: {e}")
+    # 4. Initialize Dense Retriever
+    dense_retriever = db.as_retriever(search_kwargs={"k": candidate_pool_size})
+
+    # 5. Ensemble Retriever (Hybrid Search)
+    ensemble_retriever = EnsembleRetriever(
+        retrievers=[bm25_retriever, dense_retriever],
+        weights=[0.5, 0.5]
+    )
+
+    # 6. Initialize Cross-Encoder Reranker
+    # The Cross-Encoder evaluates the candidate pool and truncates it back to the exact user-requested 'k'
+    model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
+    compressor = CrossEncoderReranker(model=model, top_n=k)
+
+    # 7. Final Pipeline: Hybrid Search -> Rerank
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=compressor,
+        base_retriever=ensemble_retriever
+    )
+
+    # 8. Retrieve and return the top-K chunks
+    return compression_retriever.invoke(query)

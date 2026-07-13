@@ -2,14 +2,20 @@
 langchain==0.2.16
 langchain-community==0.2.16
 langchain-text-splitters==0.2.4
+langchain-core==0.2.43
+langsmith==0.1.147
 sentence-transformers==3.0.1
+websockets==14.2
 
 # AI Integration
 langchain-google-genai==1.0.10
 google-genai==0.3.0
+langchain-huggingface<0.3.0
+hf_xet
 
-# Vector Database
+# Vector Database & Hybrid Search
 chromadb==0.5.5
+rank_bm25
 
 # UI & Utilities
 streamlit

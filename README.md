@@ -2,14 +2,14 @@
 
 An advanced, multi-document Retrieval-Augmented Generation (RAG) application built to assist Insurance Underwriters and Claims Agents. This tool ingests complex, often conflicting insurance policies (Auto, Homeowners, Commercial) and synthesizes highly accurate coverage assessments using Gemini 2.5 Flash.
 
-Unlike basic chatbots, this application is designed for enterprise trust: it handles cross-policy contradictions, refuses to guess without context, and explicitly cites the exact document and clause used to make its determination.
+Unlike basic chatbots, this application is designed for enterprise trust: it employs hybrid search, handles cross-policy contradictions, refuses to guess without context, and explicitly cites the exact document and clause used to make its determination.
 
 ## ✨ Key Features
 
-* **Multi-Document Retrieval:** Queries across disparate PDF policies simultaneously to evaluate overlapping or conflicting coverage rules.
-* **Source Transparency:** Surfaces the exact chunk of text and the source filename used by the LLM, allowing human agents to audit the AI's logic.
-* **Conflict Resolution Strategy:** Prompt-engineered to isolate coverage by policy type (e.g., distinguishing between a vehicle covered under an Auto policy vs. a laptop denied under a Homeowners policy in the same incident).
-* **Local Vector Storage:** Uses ChromaDB for fast, private, and local vector retrieval.
+* **Hybrid Search Retrieval:** Combines Dense Vector Search (ChromaDB) for semantic understanding with Sparse Lexical Search (BM25) to capture exact alphanumeric policy codes and hyper-specific insurance jargon.
+* **Cross-Encoder Reranking:** Utilizes the `BAAI/bge-reranker-base` model to dynamically score and filter a wide candidate pool, ensuring only the most logically relevant clauses reach the LLM context window.
+* **Multi-Document Synthesis:** Designed to evaluate overlapping or conflicting coverage rules simultaneously (e.g., distinguishing between a vehicle covered under an Auto policy vs. a laptop denied under a Homeowners policy in the same incident).
+* **Source Transparency:** Surfaces the exact chunk of text and the source filename used by the LLM, allowing human agents to audit the AI's logic with zero hallucinations on verified context.
 * **Streamlit UI:** A clean, chat-based interface with live status spinners mapping the backend RAG pipeline.
 
 ## 🛠️ Tech Stack
@@ -17,9 +17,10 @@ Unlike basic chatbots, this application is designed for enterprise trust: it han
 * **Frontend:** Streamlit
 * **Orchestration:** LangChain
 * **LLM:** Google Gemini 2.5 Flash
-* **Embeddings:** HuggingFace (`all-MiniLM-L6-v2`)
-* **Vector Database:** ChromaDB
-* **Document Loaders:** PyPDFLoader
+* **Dense Embeddings:** HuggingFace (`all-MiniLM-L6-v2`) & ChromaDB
+* **Sparse Retrieval:** BM25 (`rank_bm25`)
+* **Reranker:** HuggingFace Cross-Encoder (`BAAI/bge-reranker-base`)
+* **Document Processing:** PyPDFLoader
 
 ## 📁 Project Structure
 
