@@ -18,8 +18,18 @@ from src.generation import generate_answer
 # --- UI Configuration ---
 st.set_page_config(page_title="Claims Assistant", page_icon="🛡️", layout="centered")
 
+# --- Sidebar for Optional Image Upload ---
+with st.sidebar:
+    st.header("📸 Claim Evidence")
+    st.markdown("Upload a photo of the damage to assist with the assessment.")
+    uploaded_file = st.file_uploader("Upload incident photo (Optional)", type=["jpg", "jpeg", "png"])
+    
+    if uploaded_file:
+        # Show a preview of the image in the sidebar
+        st.image(uploaded_file, caption="Uploaded Evidence", use_container_width=True)
+
 st.title("🛡️ Enterprise Claims Assistant")
-st.markdown("Ask me complex coverage questions. I will search across all active policies (Auto, Home, Commercial) and cite my sources.")
+st.markdown("Ask me complex coverage questions. I will search across all active policies, analyze any uploaded evidence, and cite my sources.")
 
 # --- Session State for Chat History ---
 if "messages" not in st.session_state:
@@ -33,12 +43,15 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- Chat Input ---
-if prompt := st.chat_input("E.g., My car was flooded and my laptop was inside..."):
+if prompt := st.chat_input("E.g., My car was flooded and..."):
     
     # 1. Display User Message
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # Extract bytes if a file was uploaded; otherwise, it stays None
+    image_bytes = uploaded_file.getvalue() if uploaded_file else None
 
     # 2. Display Assistant Response with Loading Spinners
     with st.chat_message("assistant"):
@@ -53,16 +66,16 @@ if prompt := st.chat_input("E.g., My car was flooded and my laptop was inside...
                 st.write(f"✅ Retrieved {len(context_docs)} highly relevant clauses across multiple documents.")
                 status.update(label="Policy clauses retrieved!", state="complete", expanded=False)
             except Exception as e:
-                # NEW: Force Streamlit to print the exact technical reason it failed
+                # Force Streamlit to print the exact technical reason it failed
                 st.error(f"Database Error: {e}")
                 st.code(traceback.format_exc(), language="python")
                 st.stop()
             
         # UI: Show that the LLM is thinking
-        with st.spinner("🧠 Synthesizing cross-policy coverage and generating assessment..."):
+        with st.spinner("🧠 Synthesizing cross-policy coverage and visual evidence..."):
             
-            # Backend: Call our Generator
-            final_answer = generate_answer(prompt, context_docs)
+            # Backend: Call our Generator (Now passing image_bytes!)
+            final_answer = generate_answer(prompt, context_docs, image_bytes)
             
             # Display the final answer
             st.markdown(final_answer)

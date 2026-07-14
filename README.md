@@ -1,25 +1,26 @@
 # 🛡️ Enterprise Claims Operations Assistant
 
-An advanced, multi-document Retrieval-Augmented Generation (RAG) application built to assist Insurance Underwriters and Claims Agents. This tool ingests complex, often conflicting insurance policies (Auto, Homeowners, Commercial) and synthesizes highly accurate coverage assessments using Gemini 2.5 Flash.
+An advanced, multi-document Retrieval-Augmented Generation (RAG) application built to assist Insurance Underwriters and Claims Agents. This tool ingests complex, often conflicting insurance policies (Auto, Homeowners, Commercial) and synthesizes highly accurate coverage assessments using Gemini 2.5 Flash, **while seamlessly analyzing user-provided visual evidence (photos of damage).**
 
-Unlike basic chatbots, this application is designed for enterprise trust: it employs hybrid search, handles cross-policy contradictions, refuses to guess without context, and explicitly cites the exact document and clause used to make its determination.
+Unlike basic chatbots, this application is designed for enterprise trust: it employs hybrid search, processes multimodal inputs, handles cross-policy contradictions, refuses to guess without context, and explicitly cites the exact document and clause used to make its determination.
 
 ## ✨ Key Features
 
+* **Multimodal Vision-RAG:** Processes uploaded images of incident damage, allowing the LLM to visually assess the real-world situation before grounding its coverage determination in the retrieved text rules (acting as an automated damage-assessment and sanity-check layer).
 * **Hybrid Search Retrieval:** Combines Dense Vector Search (ChromaDB) for semantic understanding with Sparse Lexical Search (BM25) to capture exact alphanumeric policy codes and hyper-specific insurance jargon.
 * **Cross-Encoder Reranking:** Utilizes the `BAAI/bge-reranker-base` model to dynamically score and filter a wide candidate pool, ensuring only the most logically relevant clauses reach the LLM context window.
 * **Multi-Document Synthesis:** Designed to evaluate overlapping or conflicting coverage rules simultaneously (e.g., distinguishing between a vehicle covered under an Auto policy vs. a laptop denied under a Homeowners policy in the same incident).
 * **Source Transparency:** Surfaces the exact chunk of text and the source filename used by the LLM, allowing human agents to audit the AI's logic with zero hallucinations on verified context.
-* **Streamlit UI:** A clean, chat-based interface with live status spinners mapping the backend RAG pipeline.
+* **Streamlit UI:** A clean, chat-based interface with a dedicated sidebar for secure, in-memory image uploads and live status spinners mapping the backend RAG pipeline.
 
 ## 🛠️ Tech Stack
 
 * **Frontend:** Streamlit
 * **Orchestration:** LangChain
-* **LLM:** Google Gemini 2.5 Flash
-* **Dense Embeddings:** HuggingFace (`all-MiniLM-L6-v2`) & ChromaDB
+* **LLM & Vision:** Google Gemini 2.5 Flash (Multimodal)
+* **Dense Retrieval:** ChromaDB & HuggingFace (`all-MiniLM-L6-v2`)
 * **Sparse Retrieval:** BM25 (`rank_bm25`)
-* **Reranker:** HuggingFace Cross-Encoder (`BAAI/bge-reranker-base`)
+* **Reranking:** HuggingFace Cross-Encoder (`BAAI/bge-reranker-base`)
 * **Document Processing:** PyPDFLoader
 
 ## 📁 Project Structure
